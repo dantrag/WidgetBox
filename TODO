@@ -1,4 +1,5 @@
-* Style category button (or panel) closer to Qt Creator (Designer) look
+* Style category button (or panel) closer to Qt Creator (Designer) look 
+  or like to LibreOffice Writer Properties Tool Box on the right side
 
 * Improve pages behaviour in Qt Designer similar to QToolBox: 
   now Designer does not change currentPageIndex PROPERTY and focus on page or category click for some reason
