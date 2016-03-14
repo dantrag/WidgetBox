@@ -5,9 +5,7 @@
 #include <QPushButton>
 #include <QTreeWidget>
 
-/**
- * @brief The PageButton class: page (category) button for widget box
- */
+
 class PageButton : public QPushButton
 {
   Q_OBJECT
@@ -26,11 +24,7 @@ private:
   QTreeWidgetItem* mItem;
 };
 
-/**
- * @brief The WidgetBox class: Widget similar to the Widget Box in the Qt Designer.
-  It contains a list of widgets (pages) separated by categories. Each category
-  button can be clicked in order to expand and collapse the list below the button.
- */
+
 class WidgetBox : public QWidget
 {
   Q_OBJECT
@@ -69,6 +63,9 @@ protected:
   void createContainerWidget(QTreeWidgetItem* page, QWidget *widget);
   void createCategoryButton(QTreeWidgetItem* page, QString pageName);
 
+protected slots:
+  void onItemClicked(QTreeWidgetItem *item, int);
+
 signals:
     void currentIndexChanged(int index);
     void pageTitleChanged(const QString &title);
@@ -76,6 +73,7 @@ signals:
 private:
   bool checkIndex(int index) const;
   void setupWidget(QWidget *widget);
+  int getPageIndex(QTreeWidgetItem *item);
 
   QTreeWidget *mTreeWidget;
 };

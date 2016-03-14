@@ -112,6 +112,7 @@ QString WidgetBoxPlugin::includeFile() const
 {
   return QLatin1String("widgetbox.h");
 }
+
 void WidgetBoxPlugin::currentIndexChanged(int index)
 {
   Q_UNUSED(index);

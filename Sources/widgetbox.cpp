@@ -1,8 +1,13 @@
+#include <QDebug>
 #include <QBoxLayout>
 #include <QHeaderView>
 #include "widgetbox.h"
 
 
+/**
+ * @class PageButton
+ * @brief The PageButton class: page (category) button for widget box
+ */
 PageButton::PageButton(const QString &text, QTreeWidget* parent,
                        QTreeWidgetItem *item)
   : QPushButton(text, parent)
@@ -26,14 +31,24 @@ void PageButton::setTitle(QString const &title)
 
 void PageButton::buttonPressed()
 {
-  mItem->treeWidget()->setCurrentItem(mItem);
   mItem->setExpanded(!mItem->isExpanded());
+  int index = mItem->treeWidget()->indexOfTopLevelItem(mItem);
+  ((WidgetBox *)mItem->treeWidget()->parent())->setCurrentIndex(index);
+
   if(mItem->isExpanded()) {
     setIcon(QIcon(":/plugins/widgetbox/expanded.png"));
   } else {
     setIcon(QIcon(":/plugins/widgetbox/collapsed.png"));
   }
 }
+
+/*!
+ * \class WidgetBox
+ * \brief The WidgetBox class: Widget similar to the Widget Box in the Qt Designer.
+ * It contains a list of widgets (pages) separated by categories. Each category
+ * button can be clicked in order to expand and collapse the list below the button.
+ *
+*/
 
 WidgetBox::WidgetBox(QWidget *parent) : QWidget(parent)
 {
@@ -56,11 +71,16 @@ WidgetBox::WidgetBox(QWidget *parent) : QWidget(parent)
   QBoxLayout* layout = new QVBoxLayout(this);
   layout->setContentsMargins(0, 0, 0, 0);
   layout->addWidget(mTreeWidget);
+
+  connect(mTreeWidget, SIGNAL(itemClicked(QTreeWidgetItem*, int)),
+          SLOT(onItemClicked(QTreeWidgetItem*,int)));
+  connect(mTreeWidget, SIGNAL(itemActivated(QTreeWidgetItem*, int)),
+          SLOT(onItemClicked(QTreeWidgetItem*,int)));
 }
 
 QSize WidgetBox::sizeHint() const
 {
-    return QSize(130, 210);
+  return QSize(130, 210);
 }
 
 void WidgetBox::createCategoryButton(QTreeWidgetItem* page, QString pageName)
@@ -118,8 +138,8 @@ void WidgetBox::insertPage(int index, QWidget *widget)
   QString pageName = widget->windowTitle();
   if (pageName.isEmpty())
   {
-      pageName = tr("Page %1").arg(count() + 1);
-      widget->setWindowTitle(pageName);
+    pageName = tr("Page %1").arg(count() + 1);
+    widget->setWindowTitle(pageName);
   }
 
   QTreeWidgetItem* page = insertCategory(index, pageName);
@@ -212,4 +232,25 @@ void WidgetBox::setPageExpanded(bool expanded)
   if(currentIndex() >= 0) {
     categoryButton(currentIndex())->setExpanded(expanded);
   }
+}
+
+int WidgetBox::getPageIndex(QTreeWidgetItem *item)
+{
+  if (!item) return -1;
+
+  QTreeWidgetItem *parent = item->parent();
+  if(parent)  // Parent is top level item
+  {
+    return mTreeWidget->indexOfTopLevelItem(parent);
+  }
+  else        // Current item is top level
+  {
+    return item->treeWidget()->indexOfTopLevelItem(item);
+  }
+}
+
+void WidgetBox::onItemClicked(QTreeWidgetItem *item, int )
+{
+  int index = getPageIndex(item);
+  setCurrentIndex(index);
 }
