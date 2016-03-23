@@ -66,6 +66,7 @@ WidgetBox::WidgetBox(QWidget *parent) : QWidget(parent)
   mTreeWidget->header()->hide();
   mTreeWidget->setRootIsDecorated(false);
   mTreeWidget->setIndentation(0);
+  mTreeWidget->setUniformRowHeights(false);
 
   // Create WidgetBox layout
   QBoxLayout* layout = new QVBoxLayout(this);
@@ -78,10 +79,12 @@ WidgetBox::WidgetBox(QWidget *parent) : QWidget(parent)
           SLOT(onItemClicked(QTreeWidgetItem*,int)));
 }
 
+#if defined(QT_PLUGIN)
 QSize WidgetBox::sizeHint() const
 {
   return QSize(130, 210);
 }
+#endif
 
 void WidgetBox::createCategoryButton(QTreeWidgetItem* page, QString pageName)
 {
@@ -104,14 +107,17 @@ void WidgetBox::setupWidget(QWidget *widget)
   // otherwise the widget's background will be transparent,
   // showing both the model data and the tree widget item.
   widget->setAutoFillBackground(true);
-  widget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
+  widget->setPalette(palette());
+  widget->setBackgroundRole(backgroundRole());
   widget->setStyle(style());  // Set parent widget style
 }
 
 void WidgetBox::createContainerWidget(QTreeWidgetItem* page, QWidget *widget)
 {
   QTreeWidgetItem* container = new QTreeWidgetItem();
-  container->setSizeHint(0, QSize(13, 130));
+#if defined(QT_PLUGIN)
+  //container->setSizeHint(0, QSize(130, 130));
+#endif
   container->setDisabled(true);
   page->addChild(container);
   mTreeWidget->setItemWidget(container, 0, widget);
@@ -134,6 +140,9 @@ QTreeWidgetItem * WidgetBox::insertCategory(int index, QString pageName)
 
 void WidgetBox::insertPage(int index, QWidget *widget)
 {
+  if (index < 0 || index > count())
+    return;
+
   // Set default page name
   QString pageName = widget->windowTitle();
   if (pageName.isEmpty())
@@ -151,7 +160,15 @@ void WidgetBox::insertPage(int index, QWidget *widget)
 
 void WidgetBox::removePage(int index)
 {
-  delete mTreeWidget->topLevelItem(index);
+  QTreeWidgetItem *topLevelItem = mTreeWidget->topLevelItem(index);
+  if (!topLevelItem)
+    return;
+
+  if (topLevelItem->childCount() > 0)
+    mTreeWidget->removeItemWidget(topLevelItem->child(0), 0);
+  mTreeWidget->removeItemWidget(topLevelItem, 0);
+
+  delete topLevelItem;
 }
 
 int WidgetBox::currentIndex() const
@@ -197,18 +214,25 @@ QWidget* WidgetBox::widget(int index) const
 
 void WidgetBox::setPageTitle(QString const &newTitle)
 {
-  if(currentIndex() >= 0 && count() > 0)
+  if (checkIndex(currentIndex()))
   {
     categoryButton(currentIndex())->setText(newTitle);
+    // Qt doc: use QWidget::windowTitle property to store the page title.
+    // Note that currently there is no way of adding a custom property
+    // (e.g., a page title) to the pages without using a predefined property as placeholder.
+    page(currentIndex())->setWindowTitle(newTitle);
     emit pageTitleChanged(newTitle);
   }
 }
 
 QString WidgetBox::pageTitle() const
 {
-  if(currentIndex() >= 0) {
+  if (checkIndex(currentIndex()))
+  {
     return categoryButton(currentIndex())->text();
-  } else {
+  }
+  else
+  {
     return QString();
   }
 }
@@ -220,16 +244,20 @@ PageButton *WidgetBox::categoryButton(int index) const
 
 bool WidgetBox::isPageExpanded() const
 {
-  if(currentIndex() >= 0) {
+  if (checkIndex(currentIndex()))
+  {
     return categoryButton(currentIndex())->isExpanded();
-  } else {
+  }
+  else
+  {
     return false;
   }
 }
 
 void WidgetBox::setPageExpanded(bool expanded)
 {
-  if(currentIndex() >= 0) {
+  if (checkIndex(currentIndex()))
+  {
     categoryButton(currentIndex())->setExpanded(expanded);
   }
 }

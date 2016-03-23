@@ -29,19 +29,22 @@ class WidgetBox : public QWidget
 {
   Q_OBJECT
   Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex)
-  Q_PROPERTY(QString pageTitle READ pageTitle WRITE setPageTitle)
+  Q_PROPERTY(QString pageTitle READ pageTitle WRITE setPageTitle STORED true)
   Q_PROPERTY(bool isPageExpanded READ isPageExpanded WRITE setPageExpanded)
 
 public:
   WidgetBox(QWidget *parent = 0);
 
+#if defined(QT_PLUGIN)
   QSize sizeHint() const Q_DECL_OVERRIDE;
+#endif
 
   int count() const { return mTreeWidget->topLevelItemCount(); }
   QWidget *page(int index) const;
   QWidget *widget(int index) const;
   QString pageTitle() const;
   bool isPageExpanded() const;
+  int currentIndex() const;
 
 public slots:
   void setCurrentIndex(int index);
@@ -49,7 +52,6 @@ public slots:
   void addPage(QWidget *widget);
   void insertPage(int index, QWidget *widget);
   void removePage(int index);
-  int currentIndex() const;
 
   void setPageTitle(QString const &newTitle);
   void setPageExpanded(bool expanded);
