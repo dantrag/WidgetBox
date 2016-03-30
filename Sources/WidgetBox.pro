@@ -18,4 +18,5 @@ greaterThan(QT_MAJOR_VERSION, 4) {
 }
 
 target.path = $$[QT_INSTALL_PLUGINS]/designer
-INSTALLS    += target
+creator_target.path = $$[QTCREATOR_BIN_PATH]/plugins/designer
+INSTALLS    += target creator_target
