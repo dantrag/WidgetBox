@@ -1,52 +1,16 @@
 #include <QDebug>
 #include <QBoxLayout>
 #include <QHeaderView>
+
 #include "widgetbox.h"
+#include "CategoryWidgets.h"
 
-
-/**
- * @class PageButton
- * @brief The PageButton class: page (category) button for widget box
- */
-PageButton::PageButton(const QString &text, QTreeWidget* parent,
-                       QTreeWidgetItem *item)
-  : QPushButton(text, parent)
-  , mItem(item)
-{
-  mItem->setExpanded(true);
-  setIcon(QIcon(":/plugins/widgetbox/expanded.png"));
-  // setFlat(true);
-
-  setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-  QFontMetrics fm(font());
-  resize(size().width(), fm.height());
-
-  connect(this, SIGNAL(pressed()), this, SLOT(buttonPressed()));
-}
-
-void PageButton::setTitle(QString const &title)
-{
-  setText(title);
-}
-
-void PageButton::buttonPressed()
-{
-  mItem->setExpanded(!mItem->isExpanded());
-  int index = mItem->treeWidget()->indexOfTopLevelItem(mItem);
-  ((WidgetBox *)mItem->treeWidget()->parent())->setCurrentIndex(index);
-
-  if(mItem->isExpanded()) {
-    setIcon(QIcon(":/plugins/widgetbox/expanded.png"));
-  } else {
-    setIcon(QIcon(":/plugins/widgetbox/collapsed.png"));
-  }
-}
 
 /*!
  * \class WidgetBox
  * \brief The WidgetBox class: Widget similar to the Widget Box in the Qt Designer.
  * It contains a list of widgets (pages) separated by categories. Each category
- * button can be clicked in order to expand and collapse the list below the button.
+ * can be clicked in order to expand and collapse the list below the category.
  *
 */
 
@@ -57,16 +21,16 @@ WidgetBox::WidgetBox(QWidget *parent) : QWidget(parent)
   mTreeWidget->setFrameStyle(QFrame::NoFrame);
   mTreeWidget->setAnimated(true);
   mTreeWidget->setVerticalScrollMode(QTreeWidget::ScrollPerPixel);
+  mTreeWidget->header()->hide();
+  mTreeWidget->setRootIsDecorated(false);
+  mTreeWidget->setIndentation(0);
+  mTreeWidget->setUniformRowHeights(false);
+  mTreeWidget->setSelectionMode(QAbstractItemView::NoSelection);
 
   // Make tree widget same color as normal widget
   QPalette pal = mTreeWidget->palette();
   pal.setColor(QPalette::Base, palette().background().color());
   mTreeWidget->setPalette(pal);
-
-  mTreeWidget->header()->hide();
-  mTreeWidget->setRootIsDecorated(false);
-  mTreeWidget->setIndentation(0);
-  mTreeWidget->setUniformRowHeights(false);
 
   // Create WidgetBox layout
   QBoxLayout* layout = new QVBoxLayout(this);
@@ -74,9 +38,9 @@ WidgetBox::WidgetBox(QWidget *parent) : QWidget(parent)
   layout->addWidget(mTreeWidget);
 
   connect(mTreeWidget, SIGNAL(itemClicked(QTreeWidgetItem*, int)),
-          SLOT(onItemClicked(QTreeWidgetItem*,int)));
+          SLOT(onItemClicked(QTreeWidgetItem*, int)));
   connect(mTreeWidget, SIGNAL(itemActivated(QTreeWidgetItem*, int)),
-          SLOT(onItemClicked(QTreeWidgetItem*,int)));
+          SLOT(onItemClicked(QTreeWidgetItem*, int)));
 }
 
 #if defined(QT_PLUGIN)
@@ -86,11 +50,52 @@ QSize WidgetBox::sizeHint() const
 }
 #endif
 
-void WidgetBox::createCategoryButton(QTreeWidgetItem* page, QString pageName)
+/*!
+ * \brief WidgetBox::createCategory create page category widget
+ * \param page page item
+ * \param pageName page name to display in category
+ */
+void WidgetBox::createCategory(QTreeWidgetItem* page, QString pageName)
 {
-  PageButton *button = new PageButton(pageName, mTreeWidget, page);
-  mTreeWidget->setItemWidget(page, 0, button);
+  AbstractCategory *category;
+  switch (mCategoryType)
+  {
+    case Button:
+      category = new ButtonCategory(pageName, mTreeWidget, page);
+      break;
+    case Line:
+      category = new LineCategory(pageName, mTreeWidget, page);
+      break;
+    default:
+      category = new ButtonCategory(pageName, mTreeWidget, page);
+      break;
+  }
+  // Qt removes old widget automatically, no need to delete old one
+  mTreeWidget->setItemWidget(page, 0, category);
 }
+
+/*!
+ * \brief WidgetBox::recreateCategories recreates categories widgets if
+ * categoryType was changed
+ */
+void WidgetBox::recreateCategories()
+{
+  for(int i = 0; i < count(); i++)
+  {
+    QString pageName = pageTitle(i);
+    bool expanded = isPageExpanded(i);
+    // Qt removes old widget automatically, no need to delete old one
+    createCategory(mTreeWidget->topLevelItem(i), pageName);
+    category(i)->setExpanded(expanded);
+  }
+}
+
+void WidgetBox::setCategoryType(const CategoryType type)
+{
+  mCategoryType = type;
+  recreateCategories();
+}
+
 
 QTreeWidgetItem * WidgetBox::addCategory(QString pageName)
 {
@@ -133,7 +138,7 @@ QTreeWidgetItem * WidgetBox::insertCategory(int index, QString pageName)
 {
   QTreeWidgetItem* page = new QTreeWidgetItem();
   mTreeWidget->insertTopLevelItem(index, page);
-  createCategoryButton(page, pageName);
+  createCategory(page, pageName);
 
   return page;
 }
@@ -155,7 +160,7 @@ void WidgetBox::insertPage(int index, QWidget *widget)
   createContainerWidget(page, widget);
 
   connect(widget, SIGNAL(windowTitleChanged(QString)),
-          categoryButton(index), SLOT(setTitle(QString)));
+          category(index), SLOT(setTitle(QString)));
 }
 
 void WidgetBox::removePage(int index)
@@ -216,7 +221,7 @@ void WidgetBox::setPageTitle(QString const &newTitle)
 {
   if (checkIndex(currentIndex()))
   {
-    categoryButton(currentIndex())->setText(newTitle);
+    category(currentIndex())->setTitle(newTitle);
     // Qt doc: use QWidget::windowTitle property to store the page title.
     // Note that currently there is no way of adding a custom property
     // (e.g., a page title) to the pages without using a predefined property as placeholder.
@@ -225,11 +230,25 @@ void WidgetBox::setPageTitle(QString const &newTitle)
   }
 }
 
+/*!
+ * \brief WidgetBox::pageTitle Current page title
+ * \return
+ */
 QString WidgetBox::pageTitle() const
 {
-  if (checkIndex(currentIndex()))
+  return pageTitle(currentIndex());
+}
+
+/*!
+ * \brief WidgetBox::pageTitle page title
+ * \param index page index
+ * \return
+ */
+QString WidgetBox::pageTitle(int index) const
+{
+  if (checkIndex(index))
   {
-    return categoryButton(currentIndex())->text();
+    return category(index)->title();
   }
   else
   {
@@ -237,16 +256,31 @@ QString WidgetBox::pageTitle() const
   }
 }
 
-PageButton *WidgetBox::categoryButton(int index) const
+AbstractCategory *WidgetBox::category(int index) const
 {
-  return (PageButton *)mTreeWidget->itemWidget(mTreeWidget->topLevelItem(index), 0);
+  return (AbstractCategory *)mTreeWidget->itemWidget(mTreeWidget->topLevelItem(index), 0);
 }
 
+
+/*!
+ * \brief WidgetBox::isPageExpanded Checks current page is expanded
+ * \return
+ */
 bool WidgetBox::isPageExpanded() const
 {
-  if (checkIndex(currentIndex()))
+  return isPageExpanded(currentIndex());
+}
+
+/*!
+ * \brief WidgetBox::isPageExpanded Checks page with given index is expanded
+ * \param index page index
+ * \return true if specified page expanded
+ */
+bool WidgetBox::isPageExpanded(int index) const
+{
+  if (checkIndex(index))
   {
-    return categoryButton(currentIndex())->isExpanded();
+    return category(index)->isExpanded();
   }
   else
   {
@@ -258,7 +292,7 @@ void WidgetBox::setPageExpanded(bool expanded)
 {
   if (checkIndex(currentIndex()))
   {
-    categoryButton(currentIndex())->setExpanded(expanded);
+    category(currentIndex())->setExpanded(expanded);
   }
 }
 
