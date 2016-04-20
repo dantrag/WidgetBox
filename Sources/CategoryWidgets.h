@@ -23,7 +23,6 @@ protected:
   QTreeWidgetItem* item() const { return mItem; }
 
 signals:
-  void buttonPressed();
   void pageExpanded(bool expanded);
 
 protected slots:
@@ -45,7 +44,7 @@ public slots:
   void setTitle(QString const &title) override;
 
 private slots:
-  void onButtonPress();
+  void onButtonPress() override;
 
 private:
   QPushButton *mButton;

@@ -54,7 +54,7 @@ ButtonCategory::ButtonCategory(const QString &text, QTreeWidget *parent,
   QFontMetrics fm(font());
   mButton->resize(size().width(), fm.height());
 
-  connect(mButton, SIGNAL(pressed()), this, SIGNAL(buttonPressed()));
+  connect(mButton, SIGNAL(pressed()), this, SLOT(onButtonPress()));
 }
 
 void ButtonCategory::setTitle(QString const &title)

@@ -4,12 +4,11 @@
 #include <QWidget>
 #include <QPushButton>
 #include <QTreeWidget>
-#include <QtUiPlugin/QDesignerExportWidget>
-
+#include "plugin_export.h"
 
 class AbstractCategory;
 
-class WidgetBox : public QWidget
+class PLUGIN_EXPORT WidgetBox : public QWidget
 {
   Q_OBJECT
   Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex)

@@ -5,7 +5,8 @@ TEMPLATE    = lib
 HEADERS     = widgetboxplugin.h widgetbox.h \
               widgetboxextensionfactory.h \
               widgetboxdesignercontainerextension.h \
-              CategoryWidgets.h
+              CategoryWidgets.h \
+              plugin_export.h
 
 SOURCES     = widgetboxplugin.cpp widgetbox.cpp \
               widgetboxextensionfactory.cpp \
