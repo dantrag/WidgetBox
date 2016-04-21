@@ -8,6 +8,19 @@
 
 class AbstractCategory;
 
+class PageResizeFilter : public QObject
+{
+  Q_OBJECT
+public:
+  PageResizeFilter(QObject *parent, QTreeWidgetItem *item);
+
+protected:
+  bool eventFilter(QObject *obj, QEvent *event);
+
+private:
+  QTreeWidgetItem *mItem;
+};
+
 class PLUGIN_EXPORT WidgetBox : public QWidget
 {
   Q_OBJECT

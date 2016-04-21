@@ -1,10 +1,48 @@
 #include <QDebug>
+#include <QEvent>
 #include <QBoxLayout>
 #include <QHeaderView>
 
 #include "widgetbox.h"
 #include "CategoryWidgets.h"
 
+/*!
+ * \class PageResizeFilter provides event filter to change item size hint in
+ * Qt Designer on page widget resize as seems QTreeWidgetItem knows nothing
+ * about its widgets in design time and does not automatically adjust its size
+ * like it does in run-time
+ */
+
+PageResizeFilter::PageResizeFilter(QObject *parent, QTreeWidgetItem *item)
+  : QObject(parent)
+  , mItem(item)
+{
+
+}
+
+/*!
+ * \brief PageResizeFilter::eventFilter changes item size hint in Qt Designer
+ * on page widget resize as seems QTreeWidgetItem knows nothing about its
+ * widgets in design time and does not automatically adjust its size
+ * like it does in run-time
+ * \param obj page widget to filter QEvent::Resize
+ * \param event
+ * \return false to continue event processing by page widget
+ */
+bool PageResizeFilter::eventFilter(QObject *obj, QEvent *event)
+{
+  if (event->type() == QEvent::Resize)
+  {
+    QWidget *page = ((QWidget *)obj);
+    mItem->setSizeHint(0, page->geometry().size());
+    return false; // Sent event to the object (do not filter it)
+  }
+  else
+  {
+    // standard event processing
+    return QObject::eventFilter(obj, event);
+  }
+}
 
 /*!
  * \class WidgetBox
@@ -120,13 +158,20 @@ void WidgetBox::setupWidget(QWidget *widget)
 void WidgetBox::createContainerWidget(QTreeWidgetItem* page, QWidget *widget)
 {
   QTreeWidgetItem* container = new QTreeWidgetItem();
-#if defined(QT_PLUGIN)
-  //container->setSizeHint(0, QSize(130, 130));
-#endif
   container->setDisabled(true);
   page->addChild(container);
   mTreeWidget->setItemWidget(container, 0, widget);
   setupWidget(widget);
+
+#if defined(QT_PLUGIN)
+  container->setSizeHint(0, QSize(mTreeWidget->width(),
+                                  mTreeWidget->width() / 1.618));
+  // Change item size hint in Qt Designer on page widget resize
+  // as seems QTreeWidgetItem knows nothing about its widgets in design time
+  // and does not automatically adjust its size like it does in run-time
+  PageResizeFilter *filter = new PageResizeFilter(this, container);
+  widget->installEventFilter(filter);
+#endif
 }
 
 void WidgetBox::addPage(QWidget *widget)
