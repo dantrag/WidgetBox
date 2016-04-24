@@ -5,44 +5,7 @@
 
 #include "widgetbox.h"
 #include "CategoryWidgets.h"
-
-/*!
- * \class PageResizeFilter provides event filter to change item size hint in
- * Qt Designer on page widget resize as seems QTreeWidgetItem knows nothing
- * about its widgets in design time and does not automatically adjust its size
- * like it does in run-time
- */
-
-PageResizeFilter::PageResizeFilter(QObject *parent, QTreeWidgetItem *item)
-  : QObject(parent)
-  , mItem(item)
-{
-
-}
-
-/*!
- * \brief PageResizeFilter::eventFilter changes item size hint in Qt Designer
- * on page widget resize as seems QTreeWidgetItem knows nothing about its
- * widgets in design time and does not automatically adjust its size
- * like it does in run-time
- * \param obj page widget to filter QEvent::Resize
- * \param event
- * \return false to continue event processing by page widget
- */
-bool PageResizeFilter::eventFilter(QObject *obj, QEvent *event)
-{
-  if (event->type() == QEvent::Resize)
-  {
-    QWidget *page = ((QWidget *)obj);
-    mItem->setSizeHint(0, page->geometry().size());
-    return false; // Sent event to the object (do not filter it)
-  }
-  else
-  {
-    // standard event processing
-    return QObject::eventFilter(obj, event);
-  }
-}
+#include "PageEventFilter.h"
 
 /*!
  * \class WidgetBox
@@ -80,6 +43,11 @@ WidgetBox::WidgetBox(QWidget *parent) : QWidget(parent)
   connect(mTreeWidget, SIGNAL(itemActivated(QTreeWidgetItem*, int)),
           SLOT(onItemClicked(QTreeWidgetItem*, int)));
 }
+WidgetBox::~WidgetBox()
+{
+  delete mSheet;
+}
+
 
 #if defined(QT_PLUGIN)
 QSize WidgetBox::sizeHint() const
@@ -108,8 +76,10 @@ void WidgetBox::createCategory(QTreeWidgetItem* page, QString pageName)
       category = new ButtonCategory(pageName, mTreeWidget, page);
       break;
   }
-  // Qt removes old widget automatically, no need to delete old one
+  // Set new item widget: Qt removes old widget automatically, no need to delete old one
   mTreeWidget->setItemWidget(page, 0, category);
+  //
+  connect(category, SIGNAL(pageExpanded(bool)), SLOT(setPageExpanded(bool)));
 }
 
 /*!
@@ -163,12 +133,17 @@ void WidgetBox::createContainerWidget(QTreeWidgetItem* page, QWidget *widget)
   mTreeWidget->setItemWidget(container, 0, widget);
   setupWidget(widget);
 
+  // Send mouse events from page widget to tree widget
+  PageEventFilter *eventFilter = new PageEventFilter(this, container);
+  widget->installEventFilter(eventFilter);
+  widget->setObjectName(QString("__qt__passive_Page%1").arg(count() + 1));
+
 #if defined(QT_PLUGIN)
   container->setSizeHint(0, QSize(mTreeWidget->width(),
                                   mTreeWidget->width() / 1.618));
   // Change item size hint in Qt Designer on page widget resize
-  // as seems QTreeWidgetItem knows nothing about its widgets in design time
-  // and does not automatically adjust its size like it does in run-time
+  // as seems QTreeWidgetItem knows nothing about its widget in design time
+  // and does not automatically adjust item size like it does in run-time
   PageResizeFilter *filter = new PageResizeFilter(this, container);
   widget->installEventFilter(filter);
 #endif
@@ -338,6 +313,8 @@ void WidgetBox::setPageExpanded(bool expanded)
   if (checkIndex(currentIndex()))
   {
     category(currentIndex())->setExpanded(expanded);
+    changeQtDesignerProperty("isPageExpanded", isPageExpanded(currentIndex()),
+                             true);
   }
 }
 
@@ -360,4 +337,29 @@ void WidgetBox::onItemClicked(QTreeWidgetItem *item, int )
 {
   int index = getPageIndex(item);
   setCurrentIndex(index);
+
+  changeQtDesignerProperty("currentIndex", index);
+}
+
+void WidgetBox::changeQtDesignerProperty(QString propertyName, QVariant value,
+                                         bool markChangedOnly)
+{
+#if defined(QT_PLUGIN)
+  QDesignerFormWindowInterface *form =
+      QDesignerFormWindowInterface::findFormWindow(this);
+
+  if(form)
+  {
+    if(!mSheet) // Need to create sheet only once
+    {
+      QDesignerFormEditorInterface *editor = form->core();
+      QExtensionManager *manager = editor->extensionManager();
+      mSheet = qt_extension<QDesignerPropertySheetExtension*>(manager, this);
+    }
+    // Set property in Qt Designer
+    int propertyIndex = mSheet->indexOf(propertyName);
+    if(!markChangedOnly) mSheet->setProperty(propertyIndex, value);
+    mSheet->setChanged(propertyIndex, true);
+  }
+#endif
 }

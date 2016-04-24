@@ -1,7 +1,8 @@
 #include <QHBoxLayout>
 
-#include "CategoryWidgets.h"
 #include "widgetbox.h"
+#include "CategoryWidgets.h"
+#include "PageEventFilter.h"
 
 /**
  * @class AbstractCategoryButton is abstract ancestor class for all categories
@@ -13,6 +14,7 @@ AbstractCategory::AbstractCategory(const QString &, QTreeWidget *parent,
                                    QTreeWidgetItem *item)
   : QWidget(parent)
   , mItem(item)
+  , mEventFilter(new PageEventFilter(this, item))
 {
   mItem->setExpanded(true);
 }
@@ -31,16 +33,24 @@ void AbstractCategory::onPageExpand(bool expanded)
   emit pageExpanded(isExpanded());
 }
 
+int AbstractCategory::itemIndex() const
+{
+  return mItem->treeWidget()->indexOfTopLevelItem(mItem);
+}
+
 /**
  * @class PageButton
  * @brief The PageButton class: page (category) button for widget box
  */
 ButtonCategory::ButtonCategory(const QString &text, QTreeWidget *parent,
-                       QTreeWidgetItem *item)
+                               QTreeWidgetItem *item)
   : AbstractCategory(text, parent, item)
 
 {
   mButton = new QPushButton(text, parent);
+  mButton->installEventFilter(eventFilter()); // Send mouse events to tree widget
+  // Prefix __qt__passive_ enables mouse events for widget in Qt Designer
+  mButton->setObjectName(QString("__qt__passive_ButtonCategory%1").arg(itemIndex()));
 
   QHBoxLayout *horizontalLayout = new QHBoxLayout(this);
   horizontalLayout->setSpacing(0);
@@ -81,9 +91,15 @@ LineCategory::LineCategory(const QString &text, QTreeWidget *parent, QTreeWidget
   horizontalLayout->setContentsMargins(0, 0, 6, 0);
 
   mCheckBox = new QCheckBox(this);
+  mCheckBox->installEventFilter(eventFilter()); // Send mouse events to tree widget
   horizontalLayout->addWidget(mCheckBox);    // Add checkbox to layout
+  // Prefix __qt__passive_ enables mouse events for widget in Qt Designer
+  mCheckBox->setObjectName(QString("__qt__passive_CheckBox%1").arg(itemIndex()));
 
   QFrame *line1 = new QFrame(this);
+  line1->installEventFilter(eventFilter()); // Send mouse events to tree widget
+  // Prefix __qt__passive_ enables mouse events for widget in Qt Designer
+  line1->setObjectName(QString("__qt__passive_line1_%1").arg(itemIndex()));
   QSizePolicy sizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
   sizePolicy.setHorizontalStretch(0);
   sizePolicy.setVerticalStretch(0);
@@ -96,6 +112,9 @@ LineCategory::LineCategory(const QString &text, QTreeWidget *parent, QTreeWidget
   horizontalLayout->addWidget(line1);       // Add line1 to layout
 
   mLabel = new QLabel(text, this);
+  mLabel->installEventFilter(eventFilter()); // Send mouse events to tree widget
+  // Prefix __qt__passive_ enables mouse events for widget in Qt Designer
+  mLabel->setObjectName(QString("__qt__passive_Label%1").arg(itemIndex()));
   QSizePolicy sizePolicy1(QSizePolicy::Minimum, QSizePolicy::Preferred);
   sizePolicy1.setHorizontalStretch(0);
   sizePolicy1.setVerticalStretch(0);
@@ -104,6 +123,9 @@ LineCategory::LineCategory(const QString &text, QTreeWidget *parent, QTreeWidget
   horizontalLayout->addWidget(mLabel);      // Add label to layout
 
   QFrame *line2 = new QFrame(this);
+  line2->installEventFilter(eventFilter()); // Send mouse events to tree widget
+  // Prefix __qt__passive_ enables mouse events for widget in Qt Designer
+  line2->setObjectName(QString("__qt__passive_line2_%1").arg(itemIndex()));
   sizePolicy.setHeightForWidth(line2->sizePolicy().hasHeightForWidth());
   line2->setSizePolicy(sizePolicy);
   line2->setFrameShadow(QFrame::Plain);

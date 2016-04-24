@@ -6,12 +6,14 @@ HEADERS     = widgetboxplugin.h widgetbox.h \
               widgetboxextensionfactory.h \
               widgetboxdesignercontainerextension.h \
               CategoryWidgets.h \
-              plugin_export.h
+              plugin_export.h \
+              PageEventFilter.h
 
 SOURCES     = widgetboxplugin.cpp widgetbox.cpp \
               widgetboxextensionfactory.cpp \
               widgetboxdesignercontainerextension.cpp \
-              CategoryWidgets.cpp
+              CategoryWidgets.cpp \
+              PageEventFilter.cpp
 
 RESOURCES   = icons.qrc
 LIBS        += -L.

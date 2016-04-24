@@ -7,6 +7,8 @@
 #include <QLabel>
 #include <QCheckBox>
 
+class PageEventFilter;
+
 class AbstractCategory : public QWidget
 {
   Q_OBJECT
@@ -20,7 +22,9 @@ public slots:
   virtual void setExpanded(bool expanded) { mItem->setExpanded(expanded); }
 
 protected:
-  QTreeWidgetItem* item() const { return mItem; }
+  QTreeWidgetItem *item() const         { return mItem; }
+  PageEventFilter *eventFilter() const  { return mEventFilter; }
+  int itemIndex() const;
 
 signals:
   void pageExpanded(bool expanded);
@@ -31,6 +35,7 @@ protected slots:
 
 private:
   QTreeWidgetItem* mItem;
+  PageEventFilter *mEventFilter;
 };
 
 class ButtonCategory : public AbstractCategory

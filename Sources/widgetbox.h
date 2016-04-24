@@ -8,19 +8,6 @@
 
 class AbstractCategory;
 
-class PageResizeFilter : public QObject
-{
-  Q_OBJECT
-public:
-  PageResizeFilter(QObject *parent, QTreeWidgetItem *item);
-
-protected:
-  bool eventFilter(QObject *obj, QEvent *event);
-
-private:
-  QTreeWidgetItem *mItem;
-};
-
 class PLUGIN_EXPORT WidgetBox : public QWidget
 {
   Q_OBJECT
@@ -38,6 +25,7 @@ public:
   };
 
   WidgetBox(QWidget *parent = 0);
+  ~WidgetBox();
 
   CategoryType categoryType() const             { return mCategoryType; }
   void setCategoryType(const CategoryType type);
@@ -74,6 +62,9 @@ protected:
   void createContainerWidget(QTreeWidgetItem* page, QWidget *widget);
   void createCategory(QTreeWidgetItem* page, QString pageName);
 
+  void changeQtDesignerProperty(QString propertyName, QVariant value,
+                                bool markChangedOnly = false);
+
 protected slots:
   void onItemClicked(QTreeWidgetItem *item, int);
 
@@ -89,6 +80,8 @@ private:
 
   QTreeWidget *mTreeWidget;
   CategoryType mCategoryType = Button;
+  // Necessary only in Qt Designer
+  QDesignerPropertySheetExtension *mSheet = 0;
 };
 
 #endif
