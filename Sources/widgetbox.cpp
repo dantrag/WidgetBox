@@ -27,6 +27,7 @@ WidgetBox::WidgetBox(QWidget *parent) : QWidget(parent)
   mTreeWidget->setIndentation(0);
   mTreeWidget->setUniformRowHeights(false);
   mTreeWidget->setSelectionMode(QAbstractItemView::NoSelection);
+  mTreeWidget->setExpandsOnDoubleClick(false);
 
   // Make tree widget same color as normal widget
   QPalette pal = mTreeWidget->palette();
@@ -78,8 +79,8 @@ void WidgetBox::createCategory(QTreeWidgetItem* page, QString pageName)
   }
   // Set new item widget: Qt removes old widget automatically, no need to delete old one
   mTreeWidget->setItemWidget(page, 0, category);
-  //
-  connect(category, SIGNAL(pageExpanded(bool)), SLOT(setPageExpanded(bool)));
+  // Change property in Designer on page expand/unexpand
+  connect(category, SIGNAL(pageExpanded(bool)), SLOT(setPageExpandedProperty()));
 }
 
 /*!
@@ -139,8 +140,9 @@ void WidgetBox::createContainerWidget(QTreeWidgetItem* page, QWidget *widget)
   widget->setObjectName(QString("__qt__passive_Page%1").arg(count() + 1));
 
 #if defined(QT_PLUGIN)
-  container->setSizeHint(0, QSize(mTreeWidget->width(),
-                                  mTreeWidget->width() / 1.618));
+  QSize size(mTreeWidget->width(), mTreeWidget->width() / 1.618);
+  container->setSizeHint(0, size);
+  widget->resize(size);
   // Change item size hint in Qt Designer on page widget resize
   // as seems QTreeWidgetItem knows nothing about its widget in design time
   // and does not automatically adjust item size like it does in run-time
@@ -308,14 +310,23 @@ bool WidgetBox::isPageExpanded(int index) const
   }
 }
 
+void WidgetBox::setPageExpandedProperty()
+{
+  changeQtDesignerProperty("isPageExpanded", isPageExpanded(currentIndex()), true);
+}
+
 void WidgetBox::setPageExpanded(bool expanded)
 {
-  if (checkIndex(currentIndex()))
+  if(checkIndex(currentIndex()))
   {
-    category(currentIndex())->setExpanded(expanded);
-    changeQtDesignerProperty("isPageExpanded", isPageExpanded(currentIndex()),
-                             true);
+    setPageExpanded(currentIndex(), expanded);
+    setPageExpandedProperty();
   }
+}
+
+void WidgetBox::setPageExpanded(int index, bool expanded)
+{
+  if(checkIndex(index)) category(index)->setExpanded(expanded);
 }
 
 int WidgetBox::getPageIndex(QTreeWidgetItem *item)
@@ -361,5 +372,9 @@ void WidgetBox::changeQtDesignerProperty(QString propertyName, QVariant value,
     if(!markChangedOnly) mSheet->setProperty(propertyIndex, value);
     mSheet->setChanged(propertyIndex, true);
   }
+#else
+  Q_UNUSED(propertyName);
+  Q_UNUSED(value);
+  Q_UNUSED(markChangedOnly);
 #endif
 }

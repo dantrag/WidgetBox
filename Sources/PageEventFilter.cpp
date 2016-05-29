@@ -22,7 +22,7 @@ bool PageEventFilter::eventFilter(QObject *obj, QEvent *event)
   {
     // Resend signal to QTreeWidget
     emit itemClicked(mItem, 0);
-    return false; // Send event to the object (do not filter it)
+    return true; // Filter event to the object
   }
   else
   {

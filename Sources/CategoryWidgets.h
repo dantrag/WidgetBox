@@ -19,7 +19,7 @@ public:
 
 public slots:
   virtual void setTitle(QString const &title) = 0;
-  virtual void setExpanded(bool expanded) { mItem->setExpanded(expanded); }
+  virtual void setExpanded(bool expanded) { onPageExpand(expanded); }
 
 protected:
   QTreeWidgetItem *item() const         { return mItem; }
@@ -64,7 +64,7 @@ public:
 
 public slots:
   void setTitle(QString const &title) override;
-  void setExpanded(bool expanded) override { mCheckBox->setChecked(expanded); }
+  void setExpanded(bool expanded) override;
 
 private:
   QLabel *mLabel;
