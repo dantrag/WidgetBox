@@ -52,6 +52,7 @@ public slots:
 
   void setPageTitle(QString const &newTitle);
   void setPageExpanded(bool expanded);
+  void setPageExpanded(int index, bool expanded);
 
 protected:
   QTreeWidgetItem * addCategory(QString pageName);
@@ -67,6 +68,7 @@ protected:
 
 protected slots:
   void onItemClicked(QTreeWidgetItem *item, int);
+  void setPageExpandedProperty();
 
 signals:
     void currentIndexChanged(int index);

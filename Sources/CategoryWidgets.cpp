@@ -17,11 +17,12 @@ AbstractCategory::AbstractCategory(const QString &, QTreeWidget *parent,
   , mEventFilter(new PageEventFilter(this, item))
 {
   mItem->setExpanded(true);
+  connect(mEventFilter, SIGNAL(itemClicked(QTreeWidgetItem*,int)), SLOT(onButtonPress()));
 }
 
 void AbstractCategory::onButtonPress()
 {
-  onPageExpand(!mItem->isExpanded());
+  setExpanded(!mItem->isExpanded());
 }
 
 void AbstractCategory::onPageExpand(bool expanded)
@@ -63,8 +64,6 @@ ButtonCategory::ButtonCategory(const QString &text, QTreeWidget *parent,
   mButton->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
   QFontMetrics fm(font());
   mButton->resize(size().width(), fm.height());
-
-  connect(mButton, SIGNAL(pressed()), this, SLOT(onButtonPress()));
 }
 
 void ButtonCategory::setTitle(QString const &title)
@@ -91,6 +90,7 @@ LineCategory::LineCategory(const QString &text, QTreeWidget *parent, QTreeWidget
   horizontalLayout->setContentsMargins(0, 0, 6, 0);
 
   mCheckBox = new QCheckBox(this);
+  mCheckBox->setChecked(true);
   mCheckBox->installEventFilter(eventFilter()); // Send mouse events to tree widget
   horizontalLayout->addWidget(mCheckBox);    // Add checkbox to layout
   // Prefix __qt__passive_ enables mouse events for widget in Qt Designer
@@ -133,9 +133,12 @@ LineCategory::LineCategory(const QString &text, QTreeWidget *parent, QTreeWidget
   line2->setMidLineWidth(1);
   line2->setFrameShape(QFrame::HLine);
   horizontalLayout->addWidget(line2);       // Add line2 to layout
+}
 
-  setExpanded(false);                       // Expand if checkbox is checked
-  connect(mCheckBox, SIGNAL(toggled(bool)), SLOT(onPageExpand(bool)));
+void LineCategory::setExpanded(bool expanded)
+{
+  AbstractCategory::setExpanded(expanded);
+  mCheckBox->setChecked(expanded);
 }
 
 void LineCategory::setTitle(QString const &title)
